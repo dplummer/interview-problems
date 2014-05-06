@@ -77,6 +77,33 @@ class WinningEvaluator
   end
 end
 
+class Array
+  def deep_freeze
+    each { |j| j.deep_freeze if j.respond_to? :deep_freeze }
+    freeze
+  end
+end
+
+class GameState
+  attr_reader :state
+
+  def initialize(state)
+    @state = state.dup
+    state.deep_freeze
+    freeze
+  end
+
+  def next_state(player, x, y)
+    new_state = state.map{|row| row.dup}
+    new_state[y][x] = player
+    self.class.new(new_state)
+  end
+
+  def ==(o)
+    state == o.state
+  end
+end
+
 class TicTacToe
   def run
     puts "Would you like to play a game?"
