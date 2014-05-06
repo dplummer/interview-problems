@@ -95,8 +95,12 @@ class GameState
 
   def next_state(player, x, y)
     new_state = state.map{|row| row.dup}
-    new_state[y][x] = player
-    self.class.new(new_state)
+    if new_state[y] && new_state[y][x] == N
+      new_state[y][x] = player
+      self.class.new(new_state)
+    else
+      self
+    end
   end
 
   def ==(o)
