@@ -85,33 +85,88 @@ class Array
 end
 
 class GameState
-  attr_reader :state
+  attr_reader :state, :player
 
-  def initialize(state)
+  def initialize(state, player)
     @state = state.dup
+    @player = player
     state.deep_freeze
     freeze
   end
 
-  def next_state(player, x, y)
-    new_state = state.map{|row| row.dup}
-    if new_state[y] && new_state[y][x] == N
-      new_state[y][x] = player
-      self.class.new(new_state)
+  def next_state(row, col)
+    new_state = state.map(&:dup)
+    if new_state[row] && new_state[row][col] == N
+      new_state[row][col] = player
+      self.class.new(new_state, next_player)
     else
       self
     end
   end
 
   def ==(o)
-    state == o.state
+    state == o.state && player == o.player
+  end
+
+  private
+
+  def next_player
+    player == X ? O : X
   end
 end
 
 class TicTacToe
   def run
+    state = initial_game_state
     puts "Would you like to play a game?"
-    state = INITIAL_STATE
-    puts GameBoardPresenter.new(state).to_s
+    loop do
+      dispay_gameboard(state)
+      if winning_player = winner(state)
+        puts "#{winning_player} is the winner!"
+        exit
+      end
+
+      puts "Enter a [Row][Col] for #{state.player}: (q to quit)"
+      loc = gets
+      if loc == "q"
+        puts "Thanks for playing"
+        exit
+      elsif valid_input?(loc)
+        row, col = parse_input(loc)
+        new_state = state.next_state(row, col)
+        if new_state != state
+          state = new_state
+        end
+      else
+        puts "Enter location as [RowNumber][ColumnLetter]. Try again."
+      end
+    end
+  end
+
+  def initial_game_state
+    GameState.new(INITIAL_STATE, X)
+  end
+
+  def dispay_gameboard(state)
+    puts GameBoardPresenter.new(state.state).to_s
+  end
+
+  def winner(new_state)
+    WinningEvaluator.new(new_state.state).winner
+  end
+
+  def valid_input?(loc)
+    loc.length == 2 &&
+      ["1", "2", "3"].include?(loc[0]) &&
+      ["a", "b", "c"].include?(loc[1].to_s.downcase)
+  end
+
+  def parse_input(loc)
+    return loc[0].to_i - 1, ["a", "b", "c"].index(loc[1].downcase)
+  end
+
+  def gets
+    print "> "
+    STDIN.gets.chomp
   end
 end
